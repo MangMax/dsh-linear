@@ -1,0 +1,31 @@
+# dsh-linear bundle patch
+#
+# This file is the `dsh.bundle.patch` layer of the published npm package: when
+# the plugin is installed through the official CLI —
+#
+#   dsh plugin --profile <name> add dsh-linear
+#
+# — the command reconciles `dsh.profile.bundles` against installed packages
+# and, seeing this declaration, appends `dsh-linear` to the bundle stack. The
+# profile boot then merges THIS patch (a single `insert` of the plugin row)
+# exactly like a manual cordis.patch.yml mount line. No profile file edits
+# needed — one command installs and mounts.
+#
+# Config values below are defaults only: `authMode`, `credentialRef` and
+# `writePolicy` can be overridden by the profile patch layer or by the
+# launcher `--patch` layer (patch stacking order: bundles → profile
+# cordis.patch.yml → launcher --patch).
+#
+# Milestone 8 — Linear Agent Mode (plan §41): set `agentMode: true` with an
+# app-user OAuth app (authMode=oauth, actorMode=app) that has the "agent
+# session events" webhook category enabled and points at
+# /integrations/linear/webhook; store the signing secret under the
+# `webhookSecretRef` credential (default DSH_LINEAR_WEBHOOK_SECRET). See
+# README → Agent Mode.
+- insert:
+    - id: linear
+      name: "dsh-linear"
+      config:
+        authMode: oauth
+        credentialRef: DSH_LINEAR_OAUTH
+        writePolicy: ask

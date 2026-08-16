@@ -1,0 +1,52 @@
+# Release workflow (plan §57 quality gates for publish).
+#
+# Push a version tag (`v0.1.0` …) to trigger: full gates (vp check + vp test +
+# vp pack + package contents smoke + Harness install smoke) and then `npm
+# publish` with provenance. Version bumps are done with
+#
+#   pnpm release        # bumpp: bumps version, commits, tags
+#   git push --follow-tags
+#
+# Manual release checklist (human gate, plan §55/§57) — run before tagging:
+#   - OAuth manual checklist: Connect / Reconnect / Disconnect /
+#     Expired-token refresh / simultaneous tool calls during refresh
+#   - Real Linear E2E against the dedicated test workspace (CI `real-e2e`)
+#   - npm pack contents check (CI `package-contents` + smoke tests)
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+jobs:
+  gates:
+    name: release gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Check
+        run: pnpm exec vp check
+      - name: Test (includes package contents smoke, plan §57)
+        run: pnpm exec vp test
+      - name: Pack
+        run: pnpm exec vp pack
+      - name: Harness install smoke (plan §53.4)
+        run: pnpm pack --config.ignore-scripts=true && bash scripts/ci/harness-install-smoke.sh
+      - name: Publish to npm
+        run: pnpm publish --no-git-checks --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
