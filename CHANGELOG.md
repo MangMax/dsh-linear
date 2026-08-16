@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- 设置卡片改为三 tab 布局：**连接**（状态 + Connect/Reconnect/Disconnect）、
+  **认证**（authMode 与 OAuth 凭据 / API Key）、**行为**（writePolicy /
+  actorMode / 默认值 / 分页上限）；保存·放弃按钮常驻底部，任何 tab 均可
+  保存，切换 tab 不丢失草稿；英文 savedNote 文案修正为即时生效。
+
 ### Added
 
 - 设置卡片补齐全部用户面字段：`writePolicy`（ask/allow/deny 下拉）、

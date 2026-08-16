@@ -61,6 +61,9 @@ const zh = {
   serverUnreachable: "无法连接 Harness 服务器。",
   formTitle: "配置",
   formHint: "编辑后点「保存」；配置即时生效，无需重启。",
+  tabConnection: "连接",
+  tabAuth: "认证",
+  tabBehavior: "行为",
   authMode: "认证方式",
   authModeOauth: "OAuth（推荐）",
   authModeApiKey: "API Key",
@@ -124,7 +127,10 @@ const en = {
   actionAuthRevoked: "The connection was revoked. Reconnect to continue.",
   serverUnreachable: "Could not reach the Harness web server.",
   formTitle: "Configuration",
-  formHint: "Edit and save; the configuration takes effect after a restart.",
+  formHint: "Edit and save; the configuration applies live, no restart needed.",
+  tabConnection: "Connection",
+  tabAuth: "Auth",
+  tabBehavior: "Behavior",
   authMode: "Auth mode",
   authModeOauth: "OAuth (recommended)",
   authModeApiKey: "API Key",
@@ -157,7 +163,7 @@ const en = {
   save: "Save",
   discard: "Discard",
   saving: "Saving…",
-  savedNote: "Saved — takes effect after a restart",
+  savedNote: "Saved and applied live",
   saveFailed: "Save failed, please retry.",
   formUnavailable: "Settings are currently unavailable.",
   readOnly: "This deployment stores settings read-only.",
@@ -190,6 +196,12 @@ const CARD_CSS = `\
 .dshl_ghost:hover:not(:disabled){color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-label-dimmed)}
 .dshl_error{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-error);white-space:pre-wrap}
 .dshl_divider{border:0;border-top:1px solid var(--dsw-alias-border-l2);margin:4px 0}
+.dshl_tabs{border-bottom:1px solid var(--dsw-alias-border-l2);display:flex;gap:22px;margin:0 -16px;padding:0 16px}
+.dshl_tab{color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer;background:0 0;border:0;padding:7px 1px 9px;font-size:13px;line-height:20px;position:relative}
+.dshl_tab:hover,.dshl_tab[data-active="true"]{color:var(--dsw-alias-label-primary)}
+.dshl_tab[data-active="true"]:after,.dshl_tab:focus-visible:after{background:var(--dsw-alias-label-primary);content:"";border-radius:2px 2px 0 0;height:2px;position:absolute;bottom:-1px;left:0;right:0}
+.dshl_tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px;border-radius:2px}
+.dshl_panel{padding-top:12px;display:flex;flex-direction:column;gap:10px}
 .dshl_form{display:flex;flex-direction:column;gap:12px}
 .dshl_formHead{display:flex;align-items:baseline;gap:8px}
 .dshl_formTitle{margin:0;font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary)}
@@ -517,6 +529,7 @@ function LinearCard(props) {
   const t = props.t;
   const form = props.linearForm;
   const [open, setOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("connection");
   const [status, setStatus] = React.useState(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -646,251 +659,278 @@ function LinearCard(props) {
       ? React.createElement(
           "div",
           { className: "dshl_body" },
-          React.createElement("p", { className: "dshl_status" }, summary),
+          formState.ready
+            ? null
+            : React.createElement("p", { className: "dshl_hint" }, t("formUnavailable")),
+          formDisabled ? React.createElement("p", { className: "dshl_hint" }, t("readOnly")) : null,
           React.createElement(
             "div",
-            { className: "dshl_actions" },
-            connected
-              ? null
-              : React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    className: "dshl_button",
-                    disabled: busy,
-                    onClick: () => act("connect"),
-                  },
-                  t("connect"),
-                ),
-            connected
-              ? React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    className: "dshl_button dshl_ghost",
-                    disabled: busy,
-                    onClick: () => act("reconnect"),
-                  },
-                  t("reconnect"),
-                )
-              : null,
-            connected
-              ? React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    className: "dshl_button dshl_ghost",
-                    disabled: busy,
-                    onClick: () => act("disconnect"),
-                  },
-                  t("disconnect"),
-                )
-              : null,
+            { className: "dshl_tabs", role: "tablist" },
+            [
+              ["connection", t("tabConnection")],
+              ["auth", t("tabAuth")],
+              ["behavior", t("tabBehavior")],
+            ].map(([tabId, label]) =>
+              React.createElement(
+                "button",
+                {
+                  key: tabId,
+                  type: "button",
+                  className: "dshl_tab",
+                  "data-active": activeTab === tabId ? "true" : "false",
+                  role: "tab",
+                  "aria-selected": activeTab === tabId,
+                  onClick: () => setActiveTab(tabId),
+                },
+                label,
+              ),
+            ),
           ),
-          error
-            ? React.createElement("p", { className: "dshl_error", role: "status" }, error)
+          activeTab === "connection"
+            ? React.createElement(
+                "div",
+                { className: "dshl_panel", role: "tabpanel" },
+                React.createElement("p", { className: "dshl_status" }, summary),
+                React.createElement(
+                  "div",
+                  { className: "dshl_actions" },
+                  connected
+                    ? null
+                    : React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          className: "dshl_button",
+                          disabled: busy,
+                          onClick: () => act("connect"),
+                        },
+                        t("connect"),
+                      ),
+                  connected
+                    ? React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          className: "dshl_button dshl_ghost",
+                          disabled: busy,
+                          onClick: () => act("reconnect"),
+                        },
+                        t("reconnect"),
+                      )
+                    : null,
+                  connected
+                    ? React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          className: "dshl_button dshl_ghost",
+                          disabled: busy,
+                          onClick: () => act("disconnect"),
+                        },
+                        t("disconnect"),
+                      )
+                    : null,
+                ),
+                error
+                  ? React.createElement("p", { className: "dshl_error", role: "status" }, error)
+                  : null,
+              )
             : null,
-          React.createElement("hr", { className: "dshl_divider" }),
+          activeTab === "auth"
+            ? React.createElement(
+                "div",
+                { className: "dshl_panel", role: "tabpanel" },
+                React.createElement(Field, {
+                  id: "dshl-auth-mode",
+                  label: t("authMode"),
+                  select: true,
+                  text: formState.authMode,
+                  disabled: formDisabled,
+                  options: [
+                    { value: "oauth", label: t("authModeOauth") },
+                    { value: "apiKey", label: t("authModeApiKey") },
+                  ],
+                  t,
+                  onEdit: (text) => form.edit("authMode", text),
+                }),
+                oauthMode
+                  ? React.createElement(
+                      "div",
+                      { style: { display: "flex", flexDirection: "column", gap: 12 } },
+                      React.createElement(Field, {
+                        id: "dshl-client-id",
+                        label: t("oauthClientId"),
+                        ...field("oauthClientId"),
+                        t,
+                        disabled: formDisabled,
+                        onEdit: (text) => form.edit("oauthClientId", text),
+                        onReset: () => resetField("oauthClientId"),
+                      }),
+                      React.createElement(Field, {
+                        id: "dshl-client-secret",
+                        label: t("oauthClientSecret"),
+                        hint: t("oauthClientSecretHint"),
+                        secret: true,
+                        ...field("oauthClientSecret"),
+                        t,
+                        disabled: formDisabled,
+                        onEdit: (text) => form.edit("oauthClientSecret", text),
+                      }),
+                      React.createElement(Field, {
+                        id: "dshl-redirect-uri",
+                        label: t("redirectUri"),
+                        hint: t("redirectUriHint"),
+                        ...field("redirectUri"),
+                        t,
+                        disabled: formDisabled,
+                        onEdit: (text) => form.edit("redirectUri", text),
+                        onReset: () => resetField("redirectUri"),
+                      }),
+                    )
+                  : React.createElement(
+                      "div",
+                      { style: { display: "flex", flexDirection: "column", gap: 12 } },
+                      React.createElement(Field, {
+                        id: "dshl-api-key",
+                        label: t("apiKey"),
+                        hint: t("apiKeyHint"),
+                        secret: true,
+                        text: formState.staged.get("apiKey") ?? "",
+                        overridden: false,
+                        t,
+                        disabled: formDisabled,
+                        onEdit: (text) => form.edit("apiKey", text),
+                      }),
+                      React.createElement(
+                        "div",
+                        { className: "dshl_fieldHead" },
+                        React.createElement(
+                          "span",
+                          {
+                            className: `dshl_badge${formState.apiKeyConfigured ? " dshl_badgeOk" : ""}`,
+                          },
+                          formState.apiKeyConfigured
+                            ? t("apiKeyConfigured")
+                            : t("apiKeyNotConfigured"),
+                        ),
+                      ),
+                    ),
+              )
+            : null,
+          activeTab === "behavior"
+            ? React.createElement(
+                "div",
+                { className: "dshl_panel", role: "tabpanel" },
+                React.createElement(Field, {
+                  id: "dshl-write-policy",
+                  label: t("writePolicy"),
+                  select: true,
+                  text:
+                    formState.staged.get("writePolicy") ??
+                    String(formState.value.writePolicy ?? "ask"),
+                  disabled: formDisabled,
+                  options: [
+                    { value: "ask", label: t("writePolicyAsk") },
+                    { value: "allow", label: t("writePolicyAllow") },
+                    { value: "deny", label: t("writePolicyDeny") },
+                  ],
+                  t,
+                  onEdit: (text) => form.edit("writePolicy", text),
+                }),
+                React.createElement(Field, {
+                  id: "dshl-actor-mode",
+                  label: t("actorMode"),
+                  select: true,
+                  text:
+                    formState.staged.get("actorMode") ??
+                    String(formState.value.actorMode ?? "user"),
+                  disabled: formDisabled,
+                  options: [
+                    { value: "user", label: t("actorModeUser") },
+                    { value: "app", label: t("actorModeApp") },
+                  ],
+                  t,
+                  onEdit: (text) => form.edit("actorMode", text),
+                }),
+                React.createElement(Field, {
+                  id: "dshl-default-team",
+                  label: t("defaultTeam"),
+                  hint: t("defaultTeamHint"),
+                  ...field("defaultTeam"),
+                  t,
+                  disabled: formDisabled,
+                  onEdit: (text) => form.edit("defaultTeam", text),
+                  onReset: () => resetField("defaultTeam"),
+                }),
+                React.createElement(Field, {
+                  id: "dshl-default-project",
+                  label: t("defaultProject"),
+                  hint: t("defaultProjectHint"),
+                  ...field("defaultProject"),
+                  t,
+                  disabled: formDisabled,
+                  onEdit: (text) => form.edit("defaultProject", text),
+                  onReset: () => resetField("defaultProject"),
+                }),
+                React.createElement(Field, {
+                  id: "dshl-search-limit",
+                  label: t("searchLimit"),
+                  hint: t("searchLimitHint"),
+                  numeric: true,
+                  ...field("searchLimit"),
+                  t,
+                  disabled: formDisabled,
+                  onEdit: (text) => form.edit("searchLimit", text),
+                  onReset: () => resetField("searchLimit"),
+                }),
+                React.createElement(Field, {
+                  id: "dshl-comments-limit",
+                  label: t("commentsLimit"),
+                  hint: t("commentsLimitHint"),
+                  numeric: true,
+                  ...field("commentsLimit"),
+                  t,
+                  disabled: formDisabled,
+                  onEdit: (text) => form.edit("commentsLimit", text),
+                  onReset: () => resetField("commentsLimit"),
+                }),
+              )
+            : null,
           React.createElement(
             "div",
-            { className: "dshl_form" },
-            React.createElement(
-              "div",
-              { className: "dshl_formHead" },
-              React.createElement("p", { className: "dshl_formTitle" }, t("formTitle")),
-              React.createElement("p", { className: "dshl_formHint" }, t("formHint")),
-            ),
-            formState.ready
-              ? null
-              : React.createElement("p", { className: "dshl_hint" }, t("formUnavailable")),
-            formDisabled
-              ? React.createElement("p", { className: "dshl_hint" }, t("readOnly"))
-              : null,
-            React.createElement(Field, {
-              id: "dshl-auth-mode",
-              label: t("authMode"),
-              select: true,
-              text: formState.authMode,
-              disabled: formDisabled,
-              options: [
-                { value: "oauth", label: t("authModeOauth") },
-                { value: "apiKey", label: t("authModeApiKey") },
-              ],
-              t,
-              onEdit: (text) => form.edit("authMode", text),
-            }),
-            oauthMode
+            { className: "dshl_footer" },
+            formState.saved
               ? React.createElement(
-                  "div",
-                  { style: { display: "flex", flexDirection: "column", gap: 12 } },
-                  React.createElement(Field, {
-                    id: "dshl-client-id",
-                    label: t("oauthClientId"),
-                    ...field("oauthClientId"),
-                    t,
-                    disabled: formDisabled,
-                    onEdit: (text) => form.edit("oauthClientId", text),
-                    onReset: () => resetField("oauthClientId"),
-                  }),
-                  React.createElement(Field, {
-                    id: "dshl-client-secret",
-                    label: t("oauthClientSecret"),
-                    hint: t("oauthClientSecretHint"),
-                    secret: true,
-                    ...field("oauthClientSecret"),
-                    t,
-                    disabled: formDisabled,
-                    onEdit: (text) => form.edit("oauthClientSecret", text),
-                  }),
-                  React.createElement(Field, {
-                    id: "dshl-redirect-uri",
-                    label: t("redirectUri"),
-                    hint: t("redirectUriHint"),
-                    ...field("redirectUri"),
-                    t,
-                    disabled: formDisabled,
-                    onEdit: (text) => form.edit("redirectUri", text),
-                    onReset: () => resetField("redirectUri"),
-                  }),
+                  "p",
+                  { className: "dshl_footerNote dshl_footerNoteOk" },
+                  t("savedNote"),
                 )
-              : React.createElement(
-                  "div",
-                  { style: { display: "flex", flexDirection: "column", gap: 12 } },
-                  React.createElement(Field, {
-                    id: "dshl-api-key",
-                    label: t("apiKey"),
-                    hint: t("apiKeyHint"),
-                    secret: true,
-                    text: formState.staged.get("apiKey") ?? "",
-                    overridden: false,
-                    t,
-                    disabled: formDisabled,
-                    onEdit: (text) => form.edit("apiKey", text),
-                  }),
-                  React.createElement(
-                    "div",
-                    { className: "dshl_fieldHead" },
-                    React.createElement(
-                      "span",
-                      {
-                        className: `dshl_badge${formState.apiKeyConfigured ? " dshl_badgeOk" : ""}`,
-                      },
-                      formState.apiKeyConfigured ? t("apiKeyConfigured") : t("apiKeyNotConfigured"),
-                    ),
-                  ),
-                ),
-            React.createElement(
-              "div",
-              { style: { display: "flex", flexDirection: "column", gap: 12, marginTop: 4 } },
-              React.createElement(Field, {
-                id: "dshl-write-policy",
-                label: t("writePolicy"),
-                select: true,
-                text:
-                  formState.staged.get("writePolicy") ??
-                  String(formState.value.writePolicy ?? "ask"),
-                disabled: formDisabled,
-                options: [
-                  { value: "ask", label: t("writePolicyAsk") },
-                  { value: "allow", label: t("writePolicyAllow") },
-                  { value: "deny", label: t("writePolicyDeny") },
-                ],
-                t,
-                onEdit: (text) => form.edit("writePolicy", text),
-              }),
-              React.createElement(Field, {
-                id: "dshl-actor-mode",
-                label: t("actorMode"),
-                select: true,
-                text:
-                  formState.staged.get("actorMode") ?? String(formState.value.actorMode ?? "user"),
-                disabled: formDisabled,
-                options: [
-                  { value: "user", label: t("actorModeUser") },
-                  { value: "app", label: t("actorModeApp") },
-                ],
-                t,
-                onEdit: (text) => form.edit("actorMode", text),
-              }),
-              React.createElement(Field, {
-                id: "dshl-default-team",
-                label: t("defaultTeam"),
-                hint: t("defaultTeamHint"),
-                ...field("defaultTeam"),
-                t,
-                disabled: formDisabled,
-                onEdit: (text) => form.edit("defaultTeam", text),
-                onReset: () => resetField("defaultTeam"),
-              }),
-              React.createElement(Field, {
-                id: "dshl-default-project",
-                label: t("defaultProject"),
-                hint: t("defaultProjectHint"),
-                ...field("defaultProject"),
-                t,
-                disabled: formDisabled,
-                onEdit: (text) => form.edit("defaultProject", text),
-                onReset: () => resetField("defaultProject"),
-              }),
-              React.createElement(Field, {
-                id: "dshl-search-limit",
-                label: t("searchLimit"),
-                hint: t("searchLimitHint"),
-                numeric: true,
-                ...field("searchLimit"),
-                t,
-                disabled: formDisabled,
-                onEdit: (text) => form.edit("searchLimit", text),
-                onReset: () => resetField("searchLimit"),
-              }),
-              React.createElement(Field, {
-                id: "dshl-comments-limit",
-                label: t("commentsLimit"),
-                hint: t("commentsLimitHint"),
-                numeric: true,
-                ...field("commentsLimit"),
-                t,
-                disabled: formDisabled,
-                onEdit: (text) => form.edit("commentsLimit", text),
-                onReset: () => resetField("commentsLimit"),
-              }),
-            ),
-            React.createElement(
-              "div",
-              { className: "dshl_footer" },
-              formState.saved
+              : formState.failed
                 ? React.createElement(
                     "p",
-                    { className: "dshl_footerNote dshl_footerNoteOk" },
-                    t("savedNote"),
+                    { className: "dshl_footerNote dshl_footerNoteFail" },
+                    t("saveFailed"),
                   )
-                : formState.failed
-                  ? React.createElement(
-                      "p",
-                      { className: "dshl_footerNote dshl_footerNoteFail" },
-                      t("saveFailed"),
-                    )
-                  : React.createElement("p", { className: "dshl_footerNote" }, t("formHint")),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  className: "dshl_button dshl_ghost",
-                  disabled: !formState.dirty || formState.saving || formDisabled,
-                  onClick: () => form.discard(),
-                },
-                t("discard"),
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  className: "dshl_button",
-                  disabled: !formState.dirty || formState.saving || formDisabled,
-                  onClick: () => form.save(),
-                },
-                formState.saving ? t("saving") : t("save"),
-              ),
+                : React.createElement("p", { className: "dshl_footerNote" }, t("formHint")),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "dshl_button dshl_ghost",
+                disabled: !formState.dirty || formState.saving || formDisabled,
+                onClick: () => form.discard(),
+              },
+              t("discard"),
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "dshl_button",
+                disabled: !formState.dirty || formState.saving || formDisabled,
+                onClick: () => form.save(),
+              },
+              formState.saving ? t("saving") : t("save"),
             ),
           ),
         )
