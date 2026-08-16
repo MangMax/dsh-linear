@@ -8,6 +8,14 @@
 
 ### Added
 
+- 设置卡片补齐全部用户面字段：`writePolicy`（ask/allow/deny 下拉）、
+  `actorMode`（user/app 下拉）、`defaultTeam` / `defaultProject`（文本）、
+  `searchLimit` / `commentsLimit`（数字，带 1–50 / 正整数范围校验）；
+  浏览器可写白名单同步扩展（actorMode / defaultTeam / defaultProject /
+  searchLimit / commentsLimit）；全部保存即时生效。
+
+### Added
+
 - 首个完整版：56 个 Linear 工具（33 读 + 23 写），对齐 Linear 官方 MCP
   工具面（Agent Mode / 原始 GraphQL 除外）
 - OAuth + PKCE 网页授权与 API Key 两种认证，设置实时切换（`applies:

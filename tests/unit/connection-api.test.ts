@@ -292,7 +292,7 @@ test("settings POST rejects fields outside the browser allowlist", async () => {
   const run = capture(fakeService(), "POST", "/settings", fakeSettings());
   const result = await run(
     "POST",
-    JSON.stringify({ ops: [{ op: "set", path: ["defaultTeam"], value: "Engineering" }] }),
+    JSON.stringify({ ops: [{ op: "set", path: ["notASettingField"], value: "x" }] }),
   );
   expect(result.statusCode).toBe(400);
   expect(result.body).toMatchObject({ error: "VALIDATION_ERROR" });

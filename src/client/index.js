@@ -73,6 +73,21 @@ const zh = {
   apiKeyHint: "Personal API Key；保存后写入 DSH_LINEAR_API_KEY。",
   apiKeyConfigured: "已配置",
   apiKeyNotConfigured: "未配置",
+  writePolicy: "写操作策略",
+  writePolicyAsk: "ask — 每次写操作需审批（推荐）",
+  writePolicyAllow: "allow — 直接执行",
+  writePolicyDeny: "deny — 一律拒绝",
+  actorMode: "身份模式（Linear 侧）",
+  actorModeUser: "user — 以当前用户身份",
+  actorModeApp: "app — 应用身份（Agent Mode）",
+  defaultTeam: "默认团队（创建 issue 缺省）",
+  defaultTeamHint: "省略 team 参数时使用；团队名称或 key。",
+  defaultProject: "默认项目（创建 issue 缺省）",
+  defaultProjectHint: "省略 project 参数时使用；项目名称。",
+  searchLimit: "搜索默认分页大小",
+  searchLimitHint: "1–50 的整数；默认 20。",
+  commentsLimit: "评论默认条数",
+  commentsLimitHint: "正整数；默认 20。",
   overridden: "已覆盖",
   reset: "重置",
   save: "保存",
@@ -122,6 +137,21 @@ const en = {
   apiKeyHint: "Personal API key; saved into DSH_LINEAR_API_KEY.",
   apiKeyConfigured: "Configured",
   apiKeyNotConfigured: "Not configured",
+  writePolicy: "Write policy",
+  writePolicyAsk: "ask — every write requires approval (recommended)",
+  writePolicyAllow: "allow — execute directly",
+  writePolicyDeny: "deny — reject all writes",
+  actorMode: "Actor mode (Linear-side identity)",
+  actorModeUser: "user — act as the current user",
+  actorModeApp: "app — application identity (Agent Mode)",
+  defaultTeam: "Default team for issue creation",
+  defaultTeamHint: "Used when the team argument is omitted; team name or key.",
+  defaultProject: "Default project for issue creation",
+  defaultProjectHint: "Used when the project argument is omitted; project name.",
+  searchLimit: "Default search page size",
+  searchLimitHint: "Integer 1–50; default 20.",
+  commentsLimit: "Default comment window",
+  commentsLimitHint: "Positive integer; default 20.",
   overridden: "Overridden",
   reset: "Reset",
   save: "Save",
@@ -341,6 +371,23 @@ class LinearSettingsForm {
       if (field === "oauthClientSecret") {
         if (value === "") continue; // empty draft = keep the stored secret
         ops.push({ op: "set", path: [field], value });
+        continue;
+      }
+      if (field === "searchLimit" || field === "commentsLimit") {
+        // Numeric fields: the schema validates the range; the card parses
+        // the draft to a number so the write carries the right JSON type.
+        if (value === "") {
+          ops.push({ op: "unset", path: [field] });
+          continue;
+        }
+        const parsed = Number(value);
+        const max = field === "searchLimit" ? 50 : 100;
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > max) {
+          ok = false;
+          continue;
+        }
+        if (parsed === this.value[field]) continue;
+        ops.push({ op: "set", path: [field], value: parsed });
         continue;
       }
       const current = this.value[field];
@@ -732,6 +779,82 @@ function LinearCard(props) {
                     ),
                   ),
                 ),
+            React.createElement(
+              "div",
+              { style: { display: "flex", flexDirection: "column", gap: 12, marginTop: 4 } },
+              React.createElement(Field, {
+                id: "dshl-write-policy",
+                label: t("writePolicy"),
+                select: true,
+                text:
+                  formState.staged.get("writePolicy") ??
+                  String(formState.value.writePolicy ?? "ask"),
+                disabled: formDisabled,
+                options: [
+                  { value: "ask", label: t("writePolicyAsk") },
+                  { value: "allow", label: t("writePolicyAllow") },
+                  { value: "deny", label: t("writePolicyDeny") },
+                ],
+                t,
+                onEdit: (text) => form.edit("writePolicy", text),
+              }),
+              React.createElement(Field, {
+                id: "dshl-actor-mode",
+                label: t("actorMode"),
+                select: true,
+                text:
+                  formState.staged.get("actorMode") ?? String(formState.value.actorMode ?? "user"),
+                disabled: formDisabled,
+                options: [
+                  { value: "user", label: t("actorModeUser") },
+                  { value: "app", label: t("actorModeApp") },
+                ],
+                t,
+                onEdit: (text) => form.edit("actorMode", text),
+              }),
+              React.createElement(Field, {
+                id: "dshl-default-team",
+                label: t("defaultTeam"),
+                hint: t("defaultTeamHint"),
+                ...field("defaultTeam"),
+                t,
+                disabled: formDisabled,
+                onEdit: (text) => form.edit("defaultTeam", text),
+                onReset: () => resetField("defaultTeam"),
+              }),
+              React.createElement(Field, {
+                id: "dshl-default-project",
+                label: t("defaultProject"),
+                hint: t("defaultProjectHint"),
+                ...field("defaultProject"),
+                t,
+                disabled: formDisabled,
+                onEdit: (text) => form.edit("defaultProject", text),
+                onReset: () => resetField("defaultProject"),
+              }),
+              React.createElement(Field, {
+                id: "dshl-search-limit",
+                label: t("searchLimit"),
+                hint: t("searchLimitHint"),
+                numeric: true,
+                ...field("searchLimit"),
+                t,
+                disabled: formDisabled,
+                onEdit: (text) => form.edit("searchLimit", text),
+                onReset: () => resetField("searchLimit"),
+              }),
+              React.createElement(Field, {
+                id: "dshl-comments-limit",
+                label: t("commentsLimit"),
+                hint: t("commentsLimitHint"),
+                numeric: true,
+                ...field("commentsLimit"),
+                t,
+                disabled: formDisabled,
+                onEdit: (text) => form.edit("commentsLimit", text),
+                onReset: () => resetField("commentsLimit"),
+              }),
+            ),
             React.createElement(
               "div",
               { className: "dshl_footer" },
