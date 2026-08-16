@@ -3,8 +3,9 @@
  *
  * The callback handler (route → provider) and the {@link HarnessWebServer}
  * adapter (route registration inside the plugin effect): query parsing,
- * success / error pages (tokens never echoed), and the exact-route
- * registration contract with disposer semantics.
+ * themed success / error pages (tokens never echoed, harness GUI design
+ * tokens embedded, localized CTAs), and the exact-route registration
+ * contract with disposer semantics.
  */
 import { expect, test, vi } from "vite-plus/test";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -78,6 +79,30 @@ test("handler parses the query and forwards it to the provider", async () => {
   expect(res.headers["cache-control"]).toBe("no-store");
 });
 
+test("success page renders the harness-themed card with CTAs", async () => {
+  const { provider, handleCallback } = fakeProvider();
+  handleCallback.mockResolvedValue(bundle);
+  const res = fakeRes();
+
+  await createOAuthCallbackHandler(provider)(
+    fakeReq("/integrations/linear/oauth/callback?code=the-code&state=s1"),
+    res,
+  );
+
+  const body = res.body();
+  // The card mirrors the GUI design language: embedded DSW tokens (light +
+  // dark palettes), status role, success icon, primary + ghost actions.
+  expect(body).toContain('<main class="dshl-card" role="status">');
+  expect(body).toContain("dshl-iconSuccess");
+  expect(body).toContain("--dsw-alias-state-success-primary");
+  expect(body).toContain("@media (prefers-color-scheme: dark)");
+  expect(body).toContain('class="dshl-btn dshl-btnPrimary" href="/"');
+  expect(body).toContain("Return to Harness");
+  expect(body).toContain('id="dshl-close"');
+  expect(body).toContain("Close this tab");
+  expect(body).toContain("DeepSeek Harness");
+});
+
 test("success page never echoes tokens", async () => {
   const { provider, handleCallback } = fakeProvider();
   handleCallback.mockResolvedValue(bundle);
@@ -110,6 +135,10 @@ test("success page follows the browser language (zh)", async () => {
   const body = res.body();
   expect(body).toContain("Linear 已连接");
   expect(body).toContain("关闭此标签页");
+  // The page chrome follows the browser locale: lang attribute, CTA labels.
+  expect(body).toContain('<html lang="zh">');
+  expect(body).toContain("返回 Harness");
+  expect(body).toContain("关闭标签页");
 });
 
 test("handler renders an error page for a rejected callback (state mismatch)", async () => {
@@ -128,6 +157,12 @@ test("handler renders an error page for a rejected callback (state mismatch)", a
   const body = res.body();
   expect(body).toContain("Linear connection failed");
   expect(body).toContain("OAuth state is unknown");
+  // The error page uses the alert role and an error icon; only the return
+  // action is offered (no close button on failure).
+  expect(body).toContain('<main class="dshl-card" role="alert">');
+  expect(body).toContain("dshl-iconError");
+  expect(body).toContain("dshl-btnPrimary");
+  expect(body).not.toContain("dshl-close");
 });
 
 test("handler escapes provider error messages in the page", async () => {
@@ -142,8 +177,11 @@ test("handler escapes provider error messages in the page", async () => {
     res,
   );
 
+  // The error message is HTML-escaped and the error page runs no page code
+  // (no inline script — the close-tab script only ships on the success page).
+  expect(res.body()).toContain("bad &lt;script&gt;alert(1)&lt;/script&gt; input");
+  expect(res.body()).not.toContain("bad <script>alert(1)</script> input");
   expect(res.body()).not.toContain("<script>");
-  expect(res.body()).toContain("&lt;script&gt;");
 });
 
 test("HarnessWebServer registers the callback as an exact route with a disposer", () => {

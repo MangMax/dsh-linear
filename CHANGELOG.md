@@ -8,6 +8,11 @@
 
 ### Changed
 
+- OAuth 授权回调页（`/integrations/linear/oauth/callback`）重做为与主界面
+  统一的样式：内嵌 DSW 设计令牌（浅色/深色双主题，跟随系统
+  `prefers-color-scheme`）、居中卡片 + 状态图标（成功绿勾 / 失败红叉）、
+  GUI 字体栈与按钮规范，新增「返回 Harness」主按钮（成功页另有「关闭
+  标签页」）；错误页不渲染任何脚本，消息转义与 no-store 语义保持。
 - 设置卡片改为三 tab 布局：**连接**（状态 + Connect/Reconnect/Disconnect）、
   **认证**（authMode 与 OAuth 凭据 / API Key）、**行为**（writePolicy /
   actorMode / 默认值 / 分页上限）；保存·放弃按钮常驻底部，任何 tab 均可
